@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Voltrix Platform - SQS Queues
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+
+Resources:
+
+  # Dead Letter Queues
+  PaymentWebhooksDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub voltrix-payment-webhooks-dlq-${Environment}.fifo
+      FifoQueue: true
+      MessageRetentionPeriod: 1209600
+
+  UploadJobsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub voltrix-upload-jobs-dlq-${Environment}
+      MessageRetentionPeriod: 1209600
+
+  NotificationsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub voltrix-notifications-dlq-${Environment}
+      MessageRetentionPeriod: 1209600
+
+  # Main Queues
+  PaymentWebhooksQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub voltrix-payment-webhooks-${Environment}.fifo
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      VisibilityTimeout: 30
+      MessageRetentionPeriod: 345600
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt PaymentWebhooksDLQ.Arn
+        maxReceiveCount: 3
+
+  UploadJobsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub voltrix-upload-jobs-${Environment}
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt UploadJobsDLQ.Arn
+        maxReceiveCount: 3
+
+  NotificationsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub voltrix-notifications-${Environment}
+      VisibilityTimeout: 30
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt NotificationsDLQ.Arn
+        maxReceiveCount: 3
+
+  MissingContentQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub voltrix-missing-content-${Environment}
+      VisibilityTimeout: 60
+      MessageRetentionPeriod: 86400
+
+  CreatorPayoutsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub voltrix-creator-payouts-${Environment}.fifo
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      VisibilityTimeout: 60
+      MessageRetentionPeriod: 345600
+
+Outputs:
+  PaymentWebhooksQueueUrl:
+    Value: !Ref PaymentWebhooksQueue
+    Export:
+      Name: !Sub voltrix-sqs-payment-webhooks-${Environment}
+
+  UploadJobsQueueUrl:
+    Value: !Ref UploadJobsQueue
+    Export:
+      Name: !Sub voltrix-sqs-upload-jobs-${Environment}
+
+  NotificationsQueueUrl:
+    Value: !Ref NotificationsQueue
+    Export:
+      Name: !Sub voltrix-sqs-notifications-${Environment}
+
+  MissingContentQueueUrl:
+    Value: !Ref MissingContentQueue
+    Export:
+      Name: !Sub voltrix-sqs-missing-content-${Environment}
+
+  CreatorPayoutsQueueUrl:
+    Value: !Ref CreatorPayoutsQueue
+    Export:
+      Name: !Sub voltrix-sqs-creator-payouts-${Environment}

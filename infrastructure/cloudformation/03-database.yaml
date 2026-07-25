@@ -1,0 +1,192 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Voltrix Platform - RDS PostgreSQL + ElastiCache Redis
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+  DBPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Description: Master password for RDS instance
+
+Resources:
+
+  # ── DB Subnet Group ───────────────────────────────────────────────────────────
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Voltrix RDS subnet group
+      SubnetIds:
+        - !ImportValue !Sub voltrix-priv-db-subnet-1-${Environment}
+        - !ImportValue !Sub voltrix-priv-db-subnet-2-${Environment}
+        - !ImportValue !Sub voltrix-priv-db-subnet-3-${Environment}
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-db-subnet-group-${Environment}
+
+  # ── RDS Parameter Group ───────────────────────────────────────────────────────
+  DBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Family: postgres15
+      Description: Voltrix PostgreSQL parameter group
+      Parameters:
+        max_connections: '200'
+        shared_preload_libraries: pg_stat_statements
+        log_min_duration_statement: '1000'
+        log_connections: '1'
+
+  # ── RDS PostgreSQL Instance ───────────────────────────────────────────────────
+  VoltrixDB:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: !Sub voltrix-db-${Environment}
+      DBName: voltrix
+      Engine: postgres
+      EngineVersion: '15.4'
+      DBInstanceClass: db.t3.medium
+      AllocatedStorage: '100'
+      MaxAllocatedStorage: 500
+      StorageType: gp3
+      StorageEncrypted: true
+      MasterUsername: voltrix_admin
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !ImportValue !Sub voltrix-sg-rds-${Environment}
+      MultiAZ: true
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: '02:00-03:00'
+      PreferredMaintenanceWindow: 'sun:04:00-sun:05:00'
+      EnablePerformanceInsights: true
+      PerformanceInsightsRetentionPeriod: 7
+      MonitoringInterval: 60
+      MonitoringRoleArn: !GetAtt RDSMonitoringRole.Arn
+      DBParameterGroupName: !Ref DBParameterGroup
+      EnableCloudwatchLogsExports:
+        - postgresql
+        - upgrade
+      DeletionProtection: true
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-db-${Environment}
+
+  # ── RDS Read Replica ──────────────────────────────────────────────────────────
+  VoltrixDBReadReplica:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub voltrix-db-replica-${Environment}
+      SourceDBInstanceIdentifier: !Ref VoltrixDB
+      DBInstanceClass: db.t3.medium
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-db-replica-${Environment}
+
+  # ── RDS Monitoring Role ───────────────────────────────────────────────────────
+  RDSMonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub voltrix-rds-monitoring-role-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: monitoring.rds.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole
+
+  # ── ElastiCache Subnet Group ──────────────────────────────────────────────────
+  CacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      CacheSubnetGroupName: !Sub voltrix-cache-subnet-group-${Environment}
+      Description: Voltrix Redis subnet group
+      SubnetIds:
+        - !ImportValue !Sub voltrix-priv-db-subnet-1-${Environment}
+        - !ImportValue !Sub voltrix-priv-db-subnet-2-${Environment}
+        - !ImportValue !Sub voltrix-priv-db-subnet-3-${Environment}
+
+  # ── ElastiCache Redis ─────────────────────────────────────────────────────────
+  VoltrixRedis:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupId: !Sub voltrix-redis-${Environment}
+      ReplicationGroupDescription: Voltrix Redis cache
+      NodeGroupConfiguration:
+        - NumReplicas: 1
+          Slots: 0-16383
+      CacheNodeType: cache.t3.medium
+      Engine: redis
+      EngineVersion: '7.0'
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      SecurityGroupIds:
+        - !ImportValue !Sub voltrix-sg-redis-${Environment}
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: true
+      AutomaticFailoverEnabled: true
+      MultiAZEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-redis-${Environment}
+
+  # ── CloudWatch Alarms ─────────────────────────────────────────────────────────
+  DBHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub voltrix-rds-high-cpu-${Environment}
+      AlarmDescription: RDS CPU above 80%
+      MetricName: CPUUtilization
+      Namespace: AWS/RDS
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref VoltrixDB
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  DBLowStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub voltrix-rds-low-storage-${Environment}
+      AlarmDescription: RDS free storage below 10GB
+      MetricName: FreeStorageSpace
+      Namespace: AWS/RDS
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Ref VoltrixDB
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10737418240
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  DBEndpoint:
+    Value: !GetAtt VoltrixDB.Endpoint.Address
+    Export:
+      Name: !Sub voltrix-db-endpoint-${Environment}
+
+  DBReplicaEndpoint:
+    Value: !GetAtt VoltrixDBReadReplica.Endpoint.Address
+    Export:
+      Name: !Sub voltrix-db-replica-endpoint-${Environment}
+
+  RedisEndpoint:
+    Value: !GetAtt VoltrixRedis.PrimaryEndPoint.Address
+    Export:
+      Name: !Sub voltrix-redis-endpoint-${Environment}
+
+  RedisPort:
+    Value: !GetAtt VoltrixRedis.PrimaryEndPoint.Port
+    Export:
+      Name: !Sub voltrix-redis-port-${Environment}

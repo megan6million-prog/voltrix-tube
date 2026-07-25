@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Voltrix — Earn Passively</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0d0d0d;color:#fff;font-family:system-ui,sans-serif}
+    a{color:inherit;text-decoration:none}
+
+    nav{display:flex;justify-content:space-between;align-items:center;padding:20px 60px;border-bottom:1px solid #1a1a1a}
+    .logo{font-size:22px;font-weight:700;color:#7c3aed}
+    .nav-links{display:flex;gap:32px;font-size:14px;color:#888}
+    .nav-links a:hover{color:#fff}
+    .nav-cta{background:#7c3aed;color:#fff;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600}
+
+    .hero{text-align:center;padding:100px 20px 80px}
+    .hero h1{font-size:56px;font-weight:800;line-height:1.1;max-width:700px;margin:0 auto 20px}
+    .hero h1 span{color:#7c3aed}
+    .hero p{color:#888;font-size:18px;max-width:480px;margin:0 auto 40px}
+    .hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .btn-primary{background:#7c3aed;color:#fff;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:600}
+    .btn-secondary{background:#1a1a1a;color:#fff;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:600;border:1px solid #333}
+    .btn-primary:hover{background:#6d28d9}
+    .btn-secondary:hover{background:#222}
+
+    .stats{display:flex;justify-content:center;gap:60px;padding:40px 20px;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a}
+    .stat-item{text-align:center}
+    .stat-num{font-size:32px;font-weight:700;color:#7c3aed}
+    .stat-label{color:#666;font-size:13px;margin-top:4px}
+
+    .how{padding:80px 60px;text-align:center}
+    .how h2{font-size:36px;font-weight:700;margin-bottom:12px}
+    .how p{color:#888;margin-bottom:48px}
+    .steps{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+    .step{background:#1a1a1a;border-radius:12px;padding:28px;width:220px;text-align:left}
+    .step-num{color:#7c3aed;font-size:28px;font-weight:800;margin-bottom:12px}
+    .step h3{font-size:16px;font-weight:600;margin-bottom:8px}
+    .step p{color:#666;font-size:13px;line-height:1.6}
+
+    .earning{padding:80px 60px;background:#0a0a0a}
+    .earning h2{font-size:36px;font-weight:700;text-align:center;margin-bottom:48px}
+    .earning-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;max-width:900px;margin:0 auto}
+    .earning-card{background:#1a1a1a;border-radius:10px;padding:20px;border:1px solid #222}
+    .earning-icon{font-size:28px;margin-bottom:10px}
+    .earning-card h3{font-size:14px;font-weight:600;margin-bottom:4px}
+    .earning-card p{color:#666;font-size:12px}
+
+    .download{padding:80px 60px;text-align:center}
+    .download h2{font-size:36px;font-weight:700;margin-bottom:12px}
+    .download p{color:#888;margin-bottom:40px}
+    .dl-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .dl-btn{background:#1a1a1a;border:1px solid #333;border-radius:10px;padding:14px 24px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}
+    .dl-btn:hover{background:#222;border-color:#7c3aed}
+    .dl-btn span{color:#888;font-size:11px;display:block;font-weight:400}
+
+    .referral{background:#1a1a1a;border-radius:16px;padding:48px;max-width:600px;margin:0 auto 80px;text-align:center}
+    .referral h2{font-size:28px;font-weight:700;margin-bottom:12px}
+    .referral p{color:#888;font-size:15px;margin-bottom:24px}
+    .referral .highlight{color:#7c3aed;font-weight:700}
+
+    footer{border-top:1px solid #1a1a1a;padding:32px 60px;display:flex;justify-content:space-between;align-items:center;color:#555;font-size:13px}
+    footer a{color:#555}
+    footer a:hover{color:#fff}
+
+    @media(max-width:768px){
+      nav{padding:16px 20px}
+      .hero h1{font-size:36px}
+      .stats{gap:32px}
+      .how,.earning,.download{padding:60px 20px}
+      footer{flex-direction:column;gap:12px;text-align:center}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">⚡ Voltrix</div>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#earn">What you earn</a>
+    <a href="#download">Download</a>
+    <a href="https://b2b.yourdomain.com">For Business</a>
+  </div>
+  <a href="#download" class="nav-cta">Get Started</a>
+</nav>
+
+<section class="hero">
+  <h1>Your device earns while <span>you sleep</span></h1>
+  <p>Install Voltrix, enter your wallet, and earn crypto passively — no setup, no maintenance.</p>
+  <div class="hero-btns">
+    <a href="#download" class="btn-primary">Download Free</a>
+    <a href="#how" class="btn-secondary">How it works</a>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat-item"><div class="stat-num">10K+</div><div class="stat-label">Active Devices</div></div>
+  <div class="stat-item"><div class="stat-num">$50K+</div><div class="stat-label">Paid Out</div></div>
+  <div class="stat-item"><div class="stat-num">6</div><div class="stat-label">Earning Methods</div></div>
+  <div class="stat-item"><div class="stat-num">5 min</div><div class="stat-label">Setup Time</div></div>
+</div>
+
+<section class="how" id="how">
+  <h2>Dead simple setup</h2>
+  <p>Three steps and you're earning. That's it.</p>
+  <div class="steps">
+    <div class="step"><div class="step-num">01</div><h3>Download</h3><p>Install the Voltrix app on any device — Windows, Mac, Linux, Android, or iOS.</p></div>
+    <div class="step"><div class="step-num">02</div><h3>Enter wallet</h3><p>Paste your BTC or USDC wallet address. No account, no email, no KYC.</p></div>
+    <div class="step"><div class="step-num">03</div><h3>Earn</h3><p>The app runs silently in the background. Check your dashboard anytime and withdraw.</p></div>
+  </div>
+</section>
+
+<section class="earning" id="earn">
+  <h2>Multiple earning streams, one app</h2>
+  <div class="earning-grid">
+    <div class="earning-card"><div class="earning-icon">🌐</div><h3>Bandwidth</h3><p>Share unused internet bandwidth</p></div>
+    <div class="earning-card"><div class="earning-icon">💾</div><h3>Storage</h3><p>Contribute idle disk space</p></div>
+    <div class="earning-card"><div class="earning-icon">⚙️</div><h3>Compute</h3><p>Run background compute tasks</p></div>
+    <div class="earning-card"><div class="earning-icon">⛏️</div><h3>Mining</h3><p>CPU/GPU crypto mining</p></div>
+    <div class="earning-card"><div class="earning-icon">🤖</div><h3>AI Training</h3><p>Contribute to AI model training</p></div>
+    <div class="earning-card"><div class="earning-icon">📊</div><h3>Data Tasks</h3><p>Complete lightweight data tasks</p></div>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <h2>Download Voltrix</h2>
+  <p>Available on all platforms. Free forever.</p>
+  <div class="dl-btns">
+    <a href="/downloads/voltrix-setup.exe" class="dl-btn">🪟 <div>Windows<span>Download .exe</span></div></a>
+    <a href="/downloads/voltrix.dmg" class="dl-btn">🍎 <div>macOS<span>Download .dmg</span></div></a>
+    <a href="/downloads/voltrix.AppImage" class="dl-btn">🐧 <div>Linux<span>Download .AppImage</span></div></a>
+    <a href="/downloads/voltrix.apk" class="dl-btn">🤖 <div>Android<span>Download .apk</span></div></a>
+    <a href="https://apps.apple.com" class="dl-btn">📱 <div>iOS<span>App Store</span></div></a>
+  </div>
+</section>
+
+<div style="padding:0 60px 80px">
+  <div class="referral">
+    <h2>Refer & earn more</h2>
+    <p>Share your referral code and earn <span class="highlight">5% of your referrals' earnings</span> — forever, automatically.</p>
+    <a href="#download" class="btn-primary">Start Earning</a>
+  </div>
+</div>
+
+<footer>
+  <div>© 2026 Voltrix. All rights reserved.</div>
+  <div style="display:flex;gap:24px">
+    <a href="https://b2b.yourdomain.com">B2B Portal</a>
+    <a href="https://admin.yourdomain.com">Admin</a>
+    <a href="mailto:support@yourdomain.com">Support</a>
+  </div>
+</footer>
+
+</body>
+</html>

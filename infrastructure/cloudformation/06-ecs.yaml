@@ -1,0 +1,251 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Voltrix Platform - ECR + ECS Fargate + ALB
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+
+Resources:
+
+  # ── ECS Cluster ───────────────────────────────────────────────────────────
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: voltrix-cluster-prod
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  # ── IAM Roles ─────────────────────────────────────────────────────────────
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: voltrix-ecs-execution-role-prod
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: '*'
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: voltrix-ecs-task-role-prod
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VoltrixTaskPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ['s3:*']
+                Resource: ['arn:aws:s3:::voltrix-*', 'arn:aws:s3:::voltrix-*/*']
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminAddUserToGroup
+                  - cognito-idp:AdminRemoveUserFromGroup
+                Resource: '*'
+              - Effect: Allow
+                Action: ['sqs:*']
+                Resource: !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:voltrix-*'
+              - Effect: Allow
+                Action: ['kinesis:PutRecord', 'kinesis:PutRecords']
+                Resource: !Sub 'arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/voltrix-events'
+              - Effect: Allow
+                Action: ['mediaconvert:*', 'rekognition:*', 'transcribe:*', 'ivs:*']
+                Resource: '*'
+              - Effect: Allow
+                Action: ['secretsmanager:GetSecretValue', 'secretsmanager:PutSecretValue', 'secretsmanager:CreateSecret']
+                Resource: '*'
+              - Effect: Allow
+                Action: ['ce:GetCostAndUsage', 'ce:GetDimensionValues']
+                Resource: '*'
+              - Effect: Allow
+                Action: ['cloudwatch:PutMetricData', 'logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents']
+                Resource: '*'
+
+  # ── CloudWatch Logs ───────────────────────────────────────────────────────
+  APILogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /voltrix/api/prod
+      RetentionInDays: 30
+
+  # ── ALB ───────────────────────────────────────────────────────────────────
+  VoltrixALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: voltrix-alb-prod
+      Scheme: internet-facing
+      Type: application
+      Subnets:
+        - subnet-01302fecf60595435   # pub-1a
+        - subnet-0e2a11f13f8895759   # pub-1b
+        - subnet-0028a5e2c3a696bef   # pub-1c
+      SecurityGroups:
+        - sg-0ce5ecd532d58eb1e       # sg-alb-prod
+
+  APITargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: voltrix-api-tg-prod
+      Port: 8090
+      Protocol: HTTP
+      VpcId: vpc-095f6f295f0adf9c0
+      TargetType: ip
+      HealthCheckPath: /health
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: '200'
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref VoltrixALB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref APITargetGroup
+
+  # ── ECS Task Definition ───────────────────────────────────────────────────
+  APITaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: voltrix-api-prod
+      Cpu: '1024'
+      Memory: '2048'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: voltrix-api
+          Image: !Sub '991514087781.dkr.ecr.eu-west-1.amazonaws.com/voltrix-api:latest'
+          PortMappings:
+            - ContainerPort: 8090
+              Protocol: tcp
+          Environment:
+            - Name: ENVIRONMENT
+              Value: prod
+            - Name: AWS_REGION
+              Value: eu-west-1
+            - Name: AWS_ACCOUNT_ID
+              Value: '991514087781'
+            - Name: COGNITO_USER_POOL_ID
+              Value: eu-west-1_jzoGKR3ov
+            - Name: COGNITO_CLIENT_ID
+              Value: 45smc3rkjieh8hsmtpi7e0unsh
+            - Name: COGNITO_REGION
+              Value: eu-west-1
+            - Name: S3_RAW_UPLOADS
+              Value: voltrix-raw-uploads-prod-991514087781
+            - Name: S3_PROCESSED_VIDEOS
+              Value: voltrix-processed-videos-prod-991514087781
+            - Name: S3_THUMBNAILS
+              Value: voltrix-thumbnails-prod-991514087781
+            - Name: S3_SOUNDS
+              Value: voltrix-sounds-prod-991514087781
+            - Name: S3_CAPTIONS
+              Value: voltrix-captions-prod-991514087781
+            - Name: S3_DATA_LAKE
+              Value: voltrix-data-lake-prod-991514087781
+            - Name: S3_EXPORTS
+              Value: voltrix-exports-prod-991514087781
+            - Name: SQS_PAYMENT_WEBHOOKS
+              Value: 'https://sqs.eu-west-1.amazonaws.com/991514087781/voltrix-payment-webhooks-prod.fifo'
+            - Name: SQS_UPLOAD_JOBS
+              Value: 'https://sqs.eu-west-1.amazonaws.com/991514087781/voltrix-upload-jobs-prod'
+            - Name: SQS_NOTIFICATIONS
+              Value: 'https://sqs.eu-west-1.amazonaws.com/991514087781/voltrix-notifications-prod'
+            - Name: SQS_MISSING_CONTENT
+              Value: 'https://sqs.eu-west-1.amazonaws.com/991514087781/voltrix-missing-content-prod'
+            - Name: KINESIS_EVENTS_STREAM
+              Value: voltrix-events
+            - Name: ALLOWED_ORIGINS
+              Value: '["*"]'
+          Secrets:
+            - Name: DATABASE_URL
+              ValueFrom: !Sub 'arn:aws:secretsmanager:eu-west-1:991514087781:secret:voltrix/database_url'
+            - Name: REDIS_URL
+              ValueFrom: !Sub 'arn:aws:secretsmanager:eu-west-1:991514087781:secret:voltrix/redis_url'
+            - Name: SECRET_KEY
+              ValueFrom: !Sub 'arn:aws:secretsmanager:eu-west-1:991514087781:secret:voltrix/secret_key'
+            - Name: CLOUDFRONT_DOMAIN
+              ValueFrom: !Sub 'arn:aws:secretsmanager:eu-west-1:991514087781:secret:voltrix/cloudfront_domain'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /voltrix/api/prod
+              awslogs-region: eu-west-1
+              awslogs-stream-prefix: api
+          HealthCheck:
+            Command: ['CMD-SHELL', 'curl -f http://localhost:8090/health || exit 1']
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+
+  # ── ECS Service ───────────────────────────────────────────────────────────
+  APIService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListener
+    Properties:
+      ServiceName: voltrix-api-prod
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref APITaskDefinition
+      DesiredCount: 2
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - subnet-0679a2c990ce3da49   # priv-app-1a
+            - subnet-00ddf202c14a06dc9   # priv-app-1b
+          SecurityGroups:
+            - sg-07878f3b0efa32e46       # sg-ecs-api-prod
+      LoadBalancers:
+        - ContainerName: voltrix-api
+          ContainerPort: 8090
+          TargetGroupArn: !Ref APITargetGroup
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 50
+        MaximumPercent: 200
+      HealthCheckGracePeriodSeconds: 60
+
+Outputs:
+  ALBDNSName:
+    Value: !GetAtt VoltrixALB.DNSName
+    Export:
+      Name: voltrix-alb-dns-prod
+
+  ECSClusterName:
+    Value: !Ref ECSCluster
+    Export:
+      Name: voltrix-cluster-prod

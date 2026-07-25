@@ -1,0 +1,169 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Voltrix Platform - Cognito User Pool
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+
+Resources:
+
+  VoltrixUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub voltrix-users-${Environment}
+      UsernameAttributes:
+        - phone_number
+      AutoVerifiedAttributes:
+        - phone_number
+      Schema:
+        - Name: phone_number
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+        - Name: preferred_username
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: false
+          RequireLowercase: false
+          RequireNumbers: true
+          RequireSymbols: false
+      MfaConfiguration: "OPTIONAL"
+      EnabledMfas:
+        - SMS_MFA
+      SmsConfiguration:
+        ExternalId: !Sub voltrix-sms-${Environment}
+        SnsCallerArn: !GetAtt CognitoSNSRole.Arn
+      UserPoolTags:
+        Environment: !Ref Environment
+        Project: Voltrix
+
+  # Web client (frontend)
+  VoltrixWebClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub voltrix-web-${Environment}
+      UserPoolId: !Ref VoltrixUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+      SupportedIdentityProviders:
+        - COGNITO
+      AllowedOAuthFlows:
+        - implicit
+        - code
+      AllowedOAuthScopes:
+        - phone
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - http://localhost:3000/auth/callback
+      LogoutURLs:
+        - http://localhost:3000
+
+  # Mobile client
+  VoltrixMobileClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub voltrix-mobile-${Environment}
+      UserPoolId: !Ref VoltrixUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      AccessTokenValidity: 60
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: minutes
+        RefreshToken: days
+
+  # User groups
+  ViewerGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: viewer
+      UserPoolId: !Ref VoltrixUserPool
+      Description: Default viewer group
+
+  CreatorGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: creator
+      UserPoolId: !Ref VoltrixUserPool
+      Description: Content creators
+
+  PremiumGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: premium
+      UserPoolId: !Ref VoltrixUserPool
+      Description: Premium subscribers
+
+  ModeratorGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: moderator
+      UserPoolId: !Ref VoltrixUserPool
+      Description: Content moderators
+
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: admin
+      UserPoolId: !Ref VoltrixUserPool
+      Description: Platform administrators
+
+  # IAM role for Cognito to send SMS via SNS
+  CognitoSNSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub voltrix-cognito-sns-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cognito-idp.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Sub voltrix-sms-${Environment}
+      Policies:
+        - PolicyName: CognitoSNSPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sns:publish
+                Resource: "*"
+
+Outputs:
+  UserPoolId:
+    Value: !Ref VoltrixUserPool
+    Export:
+      Name: !Sub voltrix-cognito-pool-id-${Environment}
+
+  WebClientId:
+    Value: !Ref VoltrixWebClient
+    Export:
+      Name: !Sub voltrix-cognito-web-client-${Environment}
+
+  MobileClientId:
+    Value: !Ref VoltrixMobileClient
+    Export:
+      Name: !Sub voltrix-cognito-mobile-client-${Environment}

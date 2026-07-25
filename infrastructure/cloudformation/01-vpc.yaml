@@ -1,0 +1,437 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Voltrix Platform - VPC and Networking
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, staging, prod]
+
+Resources:
+
+  # ── VPC ──────────────────────────────────────────────────────────────────────
+  VoltrixVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-vpc-${Environment}
+
+  # ── Internet Gateway ──────────────────────────────────────────────────────────
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-igw-${Environment}
+
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # ── Public Subnets ────────────────────────────────────────────────────────────
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-pub-1a-${Environment}
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-pub-1b-${Environment}
+
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !Select [2, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-pub-1c-${Environment}
+
+  # ── Private App Subnets ───────────────────────────────────────────────────────
+  PrivateAppSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.10.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-priv-app-1a-${Environment}
+
+  PrivateAppSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.11.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-priv-app-1b-${Environment}
+
+  PrivateAppSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.12.0/24
+      AvailabilityZone: !Select [2, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-priv-app-1c-${Environment}
+
+  # ── Private DB Subnets ────────────────────────────────────────────────────────
+  PrivateDBSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.20.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-priv-db-1a-${Environment}
+
+  PrivateDBSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.21.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-priv-db-1b-${Environment}
+
+  PrivateDBSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      CidrBlock: 10.0.22.0/24
+      AvailabilityZone: !Select [2, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-priv-db-1c-${Environment}
+
+  # ── NAT Gateways (one per AZ for HA) ─────────────────────────────────────────
+  NATElasticIP1:
+    Type: AWS::EC2::EIP
+    DependsOn: IGWAttachment
+    Properties:
+      Domain: vpc
+
+  NATElasticIP2:
+    Type: AWS::EC2::EIP
+    DependsOn: IGWAttachment
+    Properties:
+      Domain: vpc
+
+  NATGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATElasticIP1.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-nat-1a-${Environment}
+
+  NATGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NATElasticIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-nat-1b-${Environment}
+
+  # ── Route Tables ──────────────────────────────────────────────────────────────
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-pub-rt-${Environment}
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: IGWAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PubSubnet1RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PubSubnet2RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PubSubnet3RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet3
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-priv-rt-1a-${Environment}
+
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VoltrixVPC
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-priv-rt-1b-${Environment}
+
+  PrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
+
+  PrivApp1RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateAppSubnet1
+      RouteTableId: !Ref PrivateRouteTable1
+
+  PrivApp2RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateAppSubnet2
+      RouteTableId: !Ref PrivateRouteTable2
+
+  PrivApp3RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateAppSubnet3
+      RouteTableId: !Ref PrivateRouteTable1
+
+  PrivDB1RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateDBSubnet1
+      RouteTableId: !Ref PrivateRouteTable1
+
+  PrivDB2RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateDBSubnet2
+      RouteTableId: !Ref PrivateRouteTable2
+
+  PrivDB3RTAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateDBSubnet3
+      RouteTableId: !Ref PrivateRouteTable1
+
+  # ── Security Groups ───────────────────────────────────────────────────────────
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub voltrix-sg-alb-${Environment}
+      GroupDescription: ALB - public HTTPS traffic
+      VpcId: !Ref VoltrixVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-sg-alb-${Environment}
+
+  ECSAPISecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub voltrix-sg-ecs-api-${Environment}
+      GroupDescription: ECS API Service
+      VpcId: !Ref VoltrixVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-sg-ecs-api-${Environment}
+
+  ECSWorkerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub voltrix-sg-ecs-worker-${Environment}
+      GroupDescription: ECS Worker Service - no inbound
+      VpcId: !Ref VoltrixVPC
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-sg-ecs-worker-${Environment}
+
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub voltrix-sg-rds-${Environment}
+      GroupDescription: RDS PostgreSQL
+      VpcId: !Ref VoltrixVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref ECSAPISecurityGroup
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref ECSWorkerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-sg-rds-${Environment}
+
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub voltrix-sg-redis-${Environment}
+      GroupDescription: ElastiCache Redis
+      VpcId: !Ref VoltrixVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref ECSAPISecurityGroup
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref ECSWorkerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-sg-redis-${Environment}
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub voltrix-sg-lambda-${Environment}
+      GroupDescription: Lambda functions
+      VpcId: !Ref VoltrixVPC
+      Tags:
+        - Key: Name
+          Value: !Sub voltrix-sg-lambda-${Environment}
+
+Outputs:
+  VPCId:
+    Value: !Ref VoltrixVPC
+    Export:
+      Name: !Sub voltrix-vpc-id-${Environment}
+
+  PublicSubnet1Id:
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub voltrix-pub-subnet-1-${Environment}
+
+  PublicSubnet2Id:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub voltrix-pub-subnet-2-${Environment}
+
+  PublicSubnet3Id:
+    Value: !Ref PublicSubnet3
+    Export:
+      Name: !Sub voltrix-pub-subnet-3-${Environment}
+
+  PrivateAppSubnet1Id:
+    Value: !Ref PrivateAppSubnet1
+    Export:
+      Name: !Sub voltrix-priv-app-subnet-1-${Environment}
+
+  PrivateAppSubnet2Id:
+    Value: !Ref PrivateAppSubnet2
+    Export:
+      Name: !Sub voltrix-priv-app-subnet-2-${Environment}
+
+  PrivateAppSubnet3Id:
+    Value: !Ref PrivateAppSubnet3
+    Export:
+      Name: !Sub voltrix-priv-app-subnet-3-${Environment}
+
+  PrivateDBSubnet1Id:
+    Value: !Ref PrivateDBSubnet1
+    Export:
+      Name: !Sub voltrix-priv-db-subnet-1-${Environment}
+
+  PrivateDBSubnet2Id:
+    Value: !Ref PrivateDBSubnet2
+    Export:
+      Name: !Sub voltrix-priv-db-subnet-2-${Environment}
+
+  PrivateDBSubnet3Id:
+    Value: !Ref PrivateDBSubnet3
+    Export:
+      Name: !Sub voltrix-priv-db-subnet-3-${Environment}
+
+  ALBSecurityGroupId:
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: !Sub voltrix-sg-alb-${Environment}
+
+  ECSAPISecurityGroupId:
+    Value: !Ref ECSAPISecurityGroup
+    Export:
+      Name: !Sub voltrix-sg-ecs-api-${Environment}
+
+  ECSWorkerSecurityGroupId:
+    Value: !Ref ECSWorkerSecurityGroup
+    Export:
+      Name: !Sub voltrix-sg-ecs-worker-${Environment}
+
+  RDSSecurityGroupId:
+    Value: !Ref RDSSecurityGroup
+    Export:
+      Name: !Sub voltrix-sg-rds-${Environment}
+
+  RedisSecurityGroupId:
+    Value: !Ref RedisSecurityGroup
+    Export:
+      Name: !Sub voltrix-sg-redis-${Environment}
+
+  LambdaSecurityGroupId:
+    Value: !Ref LambdaSecurityGroup
+    Export:
+      Name: !Sub voltrix-sg-lambda-${Environment}

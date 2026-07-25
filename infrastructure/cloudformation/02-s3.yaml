@@ -1,0 +1,168 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Voltrix Platform - S3 Buckets
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+
+Resources:
+
+  # ── Raw Uploads (temp - 7 day auto-delete) ───────────────────────────────────
+  RawUploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub voltrix-raw-uploads-${Environment}-${AWS::AccountId}
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAfter7Days
+            Status: Enabled
+            ExpirationInDays: 7
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [PUT, POST]
+            AllowedOrigins: ['*']
+            MaxAge: 3600
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ── Processed Videos ──────────────────────────────────────────────────────────
+  ProcessedVideosBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub voltrix-processed-videos-${Environment}-${AWS::AccountId}
+      LifecycleConfiguration:
+        Rules:
+          - Id: GlacierAfter1Year
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 365
+                StorageClass: GLACIER_IR
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ── Thumbnails ────────────────────────────────────────────────────────────────
+  ThumbnailsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub voltrix-thumbnails-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ── Sounds ────────────────────────────────────────────────────────────────────
+  SoundsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub voltrix-sounds-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ── Frontend Static ───────────────────────────────────────────────────────────
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub voltrix-frontend-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ── Data Lake (ML events) ─────────────────────────────────────────────────────
+  DataLakeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub voltrix-data-lake-${Environment}-${AWS::AccountId}
+      LifecycleConfiguration:
+        Rules:
+          - Id: IAAfter90Days
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 90
+                StorageClass: STANDARD_IA
+          - Id: GlacierAfter1Year
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 365
+                StorageClass: GLACIER
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ── Exports / Reports ─────────────────────────────────────────────────────────
+  ExportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub voltrix-exports-${Environment}-${AWS::AccountId}
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAfter30Days
+            Status: Enabled
+            ExpirationInDays: 30
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ── Captions ──────────────────────────────────────────────────────────────────
+  CaptionsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub voltrix-captions-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+Outputs:
+  RawUploadsBucketName:
+    Value: !Ref RawUploadsBucket
+    Export:
+      Name: !Sub voltrix-raw-uploads-bucket-${Environment}
+
+  ProcessedVideosBucketName:
+    Value: !Ref ProcessedVideosBucket
+    Export:
+      Name: !Sub voltrix-processed-videos-bucket-${Environment}
+
+  ThumbnailsBucketName:
+    Value: !Ref ThumbnailsBucket
+    Export:
+      Name: !Sub voltrix-thumbnails-bucket-${Environment}
+
+  SoundsBucketName:
+    Value: !Ref SoundsBucket
+    Export:
+      Name: !Sub voltrix-sounds-bucket-${Environment}
+
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+    Export:
+      Name: !Sub voltrix-frontend-bucket-${Environment}
+
+  DataLakeBucketName:
+    Value: !Ref DataLakeBucket
+    Export:
+      Name: !Sub voltrix-data-lake-bucket-${Environment}
+
+  CaptionsBucketName:
+    Value: !Ref CaptionsBucket
+    Export:
+      Name: !Sub voltrix-captions-bucket-${Environment}

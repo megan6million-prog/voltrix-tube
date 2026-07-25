@@ -1,0 +1,41 @@
+{
+  "name": "Voltrix",
+  "short_name": "Voltrix",
+  "description": "Uganda's video platform — movies, sports, gaming and creator economy",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "share_target": {
+    "action": "/watch",
+    "method": "GET",
+    "params": {
+      "url": "url",
+      "title": "title"
+    }
+  },
+  "categories": ["entertainment", "video", "social"],
+  "lang": "en"
+}

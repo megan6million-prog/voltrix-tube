@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Voltrix - RDS PostgreSQL (dev/prod)
+
+Parameters:
+  DBPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Default: voltrix_prod_password_32chars_ok
+
+Resources:
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Voltrix RDS subnet group
+      SubnetIds:
+        - subnet-0972c3a7d449c0729   # priv-db-1a
+        - subnet-09f8cc03a76cb86c4   # priv-db-1b
+        - subnet-005f3a2e40bd453d7   # priv-db-1c
+
+  VoltrixDB:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: voltrix-db-prod
+      DBName: voltrix
+      Engine: postgres
+      EngineVersion: '15.18'
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: '20'
+      MaxAllocatedStorage: 100
+      StorageType: gp3
+      StorageEncrypted: true
+      MasterUsername: voltrix_admin
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - sg-034a2f43fd2f5aabd   # sg-rds-prod
+      MultiAZ: false
+      BackupRetentionPeriod: 3
+      DeletionProtection: false
+      PubliclyAccessible: false
+
+  # ElastiCache Redis (single node for now)
+  CacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      CacheSubnetGroupName: voltrix-cache-subnet-prod
+      Description: Voltrix Redis subnet group
+      SubnetIds:
+        - subnet-0972c3a7d449c0729
+        - subnet-09f8cc03a76cb86c4
+
+  VoltrixRedis:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      ClusterName: voltrix-redis-prod
+      CacheNodeType: cache.t3.micro
+      Engine: redis
+      EngineVersion: '7.0'
+      NumCacheNodes: 1
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      VpcSecurityGroupIds:
+        - sg-02a4b2381eb71b870   # sg-redis-prod
+
+Outputs:
+  DBEndpoint:
+    Value: !GetAtt VoltrixDB.Endpoint.Address
+    Export:
+      Name: voltrix-db-endpoint-prod
+
+  DBPort:
+    Value: !GetAtt VoltrixDB.Endpoint.Port
+    Export:
+      Name: voltrix-db-port-prod
+
+  RedisEndpoint:
+    Value: !GetAtt VoltrixRedis.RedisEndpoint.Address
+    Export:
+      Name: voltrix-redis-endpoint-prod

@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Voltrix Platform - CloudFront CDN
+
+Resources:
+
+  VideosOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: voltrix-videos-oac-prod
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: voltrix-frontend-oac-prod
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  VoltrixCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Voltrix Platform CDN
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_All
+        HttpVersion: http2and3
+
+        Origins:
+          - Id: processed-videos
+            DomainName: voltrix-processed-videos-prod-991514087781.s3.eu-west-1.amazonaws.com
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+            OriginAccessControlId: !GetAtt VideosOAC.Id
+
+          - Id: thumbnails
+            DomainName: voltrix-thumbnails-prod-991514087781.s3.eu-west-1.amazonaws.com
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+            OriginAccessControlId: !GetAtt VideosOAC.Id
+
+          - Id: sounds
+            DomainName: voltrix-sounds-prod-991514087781.s3.eu-west-1.amazonaws.com
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+            OriginAccessControlId: !GetAtt VideosOAC.Id
+
+          - Id: frontend
+            DomainName: voltrix-frontend-prod-991514087781.s3.eu-west-1.amazonaws.com
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+
+          - Id: api
+            DomainName: voltrix-alb-prod-2137832617.eu-west-1.elb.amazonaws.com
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+
+        CacheBehaviors:
+          - PathPattern: /videos/*
+            TargetOriginId: processed-videos
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+            Compress: true
+
+          - PathPattern: /thumbnails/*
+            TargetOriginId: thumbnails
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+            Compress: true
+
+          - PathPattern: /sounds/*
+            TargetOriginId: sounds
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+            Compress: true
+
+          - PathPattern: /v1/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
+            CachedMethods: [GET, HEAD]
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+
+          - PathPattern: /health
+            TargetOriginId: api
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            AllowedMethods: [GET, HEAD]
+            CachedMethods: [GET, HEAD]
+
+        DefaultCacheBehavior:
+          TargetOriginId: frontend
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          Compress: true
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+Outputs:
+  CloudFrontDomain:
+    Value: !GetAtt VoltrixCDN.DomainName
+    Export:
+      Name: voltrix-cloudfront-domain-prod
+
+  CloudFrontDistributionId:
+    Value: !Ref VoltrixCDN
+    Export:
+      Name: voltrix-cloudfront-id-prod
