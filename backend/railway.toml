@@ -3,5 +3,4 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "sh -c 'export DB_SYNC=$(echo $DATABASE_URL | sed s/postgresql+asyncpg/postgresql/g | sed s/postgresql+asyncpg+asyncpg/postgresql+asyncpg/g) && DATABASE_URL=$DB_SYNC alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}'"
 restartPolicyType = "ON_FAILURE"
