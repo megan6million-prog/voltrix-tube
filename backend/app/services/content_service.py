@@ -25,21 +25,17 @@ class ContentService:
         content_type_mime: str,
         file_size: int,
     ) -> dict:
-        if file_size > 10 * 1024 * 1024 * 1024:  # 10GB max
+        if file_size > 10 * 1024 * 1024 * 1024:
             raise ValueError("File size exceeds 10GB limit")
 
+        from app.core.storage import generate_presigned_upload_url
         content_id = uuid.uuid4()
         s3_key = f"uploads/{user_id}/{content_id}/{filename}"
 
-        s3 = boto3.client("s3", region_name=settings.AWS_REGION)
-        presigned_url = s3.generate_presigned_url(
-            "put_object",
-            Params={
-                "Bucket": settings.S3_RAW_UPLOADS,
-                "Key": s3_key,
-                "ContentType": content_type_mime,
-            },
-            ExpiresIn=3600,
+        presigned_url = generate_presigned_upload_url(
+            bucket=settings.S3_RAW_UPLOADS,
+            key=s3_key,
+            content_type=content_type_mime,
         )
         return {
             "upload_url": presigned_url,

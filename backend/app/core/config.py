@@ -27,7 +27,13 @@ class Settings(BaseSettings):
 
     # AWS
     AWS_REGION: str = "eu-west-1"
-    AWS_ACCOUNT_ID: str
+    AWS_ACCOUNT_ID: str = "000000000000"
+
+    # Cloudflare R2 (S3-compatible storage)
+    R2_ENDPOINT: Optional[str] = None
+    R2_ACCESS_KEY_ID: Optional[str] = None
+    R2_SECRET_ACCESS_KEY: Optional[str] = None
+    CF_ACCOUNT_ID: Optional[str] = None
 
     # S3 Buckets
     S3_RAW_UPLOADS: str
