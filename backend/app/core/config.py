@@ -119,3 +119,10 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
+
+
+def _fix_db_url(url: str) -> str:
+    """Convert postgresql:// to postgresql+asyncpg:// if needed."""
+    if url.startswith("postgresql://") and "+asyncpg" not in url:
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
