@@ -13,4 +13,8 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["sh", "-c", "\
+  export DB_SYNC=$(echo $DATABASE_URL | sed 's|postgresql+asyncpg://|postgresql://|g' | sed 's|ssl=require|sslmode=require|g') && \
+  DATABASE_URL=$DB_SYNC alembic upgrade head && \
+  uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} \
+"]
