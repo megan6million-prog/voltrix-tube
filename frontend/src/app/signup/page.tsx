@@ -6,8 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import api from "@/lib/api";
+import { Eye, EyeOff } from "lucide-react";
 import { useAppStore } from "@/store/app.store";
-import { Eye, EyeOff, Tv } from "lucide-react";
+import VoltrixLogo from "@/components/shared/VoltrixLogo";
 
 const schema = z.object({
   username: z.string().min(3).max(50).regex(/^[a-z0-9_]+$/, "Lowercase letters, numbers, underscore only"),
@@ -35,7 +36,16 @@ export default function SignupPage() {
       const res = await api.post("/auth/signup", data);
       const result = res.data.data;
 
-      // Dev mode — no OTP needed, go straight to login
+      // Dev mode — tokens returned directly, skip OTP
+      if (result.skip_otp && result.access_token) {
+        localStorage.setItem("voltrix_access_token", result.access_token);
+        localStorage.setItem("voltrix_refresh_token", result.refresh_token);
+        setUser(result.user);
+        router.push("/");
+        return;
+      }
+
+      // Dev mode fallback — auto-login after signup
       if (result.dev_mode) {
         const loginRes = await api.post("/auth/login", {
           phone: data.phone_primary,
@@ -64,10 +74,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
-            <Tv size={20} className="text-white" />
-          </div>
-          <span className="text-2xl font-bold">Voltrix</span>
+          <VoltrixLogo size={42} textSize="text-2xl" />
         </div>
 
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8">

@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Voltrix",
+    "slug": "voltrix",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "voltrix",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f0f0f"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.voltrix.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Voltrix needs camera access to record videos.",
+        "NSMicrophoneUsageDescription": "Voltrix needs microphone access for live streaming.",
+        "NSPhotoLibraryUsageDescription": "Voltrix needs photo library access to upload videos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#0f0f0f"
+      },
+      "package": "com.voltrix.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Voltrix needs camera access to record videos."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8ffe23da-57c9-41ae-af12-4a5277688d31"
+      }
+    },
+    "owner": "minute_man"
+  }
+}

@@ -29,6 +29,6 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationships
+    # Relationships — use string references to avoid circular imports
     wallet: Mapped["UserWallet"] = relationship("UserWallet", back_populates="user", uselist=False)
     channel: Mapped["Channel"] = relationship("Channel", back_populates="user", uselist=False)

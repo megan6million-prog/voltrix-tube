@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAppStore } from "@/store/app.store";
-import { Tv } from "lucide-react";
+import VoltrixLogo from "@/components/shared/VoltrixLogo";
 
 export default function VerifyOTPPage() {
   const router = useRouter();
@@ -76,10 +76,7 @@ export default function VerifyOTPPage() {
     <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
-            <Tv size={20} className="text-white" />
-          </div>
-          <span className="text-2xl font-bold">Voltrix</span>
+          <VoltrixLogo size={42} textSize="text-2xl" />
         </div>
 
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8">

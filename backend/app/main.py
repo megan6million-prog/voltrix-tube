@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import structlog
 
+# Import all models first to ensure SQLAlchemy resolves relationships correctly
+import app.models  # noqa: F401
+
 from app.core.config import get_settings
 from app.api.v1.router import api_router
 

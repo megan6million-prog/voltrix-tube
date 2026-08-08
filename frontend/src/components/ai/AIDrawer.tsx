@@ -2,7 +2,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/store/app.store";
 import api from "@/lib/api";
-import { Bot, X, Send, ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
+import { X, Send, ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
+import VoltIcon from "@/components/shared/VoltIcon";
 
 interface Message {
   id: string;
@@ -84,14 +85,14 @@ export default function AIDrawer() {
       {/* Drawer */}
       <div className="fixed right-0 top-0 bottom-0 w-full sm:w-96 bg-[#111] border-l border-white/10 flex flex-col z-50 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-sky-500/20 bg-gradient-to-r from-sky-950/50 to-blue-950/50">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
-              <Bot size={16} />
+            <div className="w-8 h-8 bg-gradient-to-br from-sky-900 to-blue-900 border border-sky-500/40 rounded-full flex items-center justify-center">
+              <VoltIcon size={16} />
             </div>
             <div>
-              <p className="text-sm font-semibold">Voltrix AI</p>
-              <p className="text-xs text-gray-400">Always here to help</p>
+              <p className="text-sm font-semibold text-sky-300">Volt</p>
+              <p className="text-xs text-gray-400">Voltrix AI Assistant</p>
             </div>
           </div>
           <button onClick={() => setAiDrawerOpen(false)}

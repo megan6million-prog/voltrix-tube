@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "whatsapp": {
+      "command": "node",
+      "args": [
+        "/home/voltrix/whatsapp-mcp/src/index.js"
+      ],
+      "env": {}
+    }
+  }
+}

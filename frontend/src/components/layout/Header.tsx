@@ -1,8 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Bell, Bot, Wallet, Menu, LogOut, User, Tv } from "lucide-react";
+import { Search, Bell, Wallet, Menu, LogOut, User } from "lucide-react";
 import { useAppStore } from "@/store/app.store";
+import VoltrixLogo from "@/components/shared/VoltrixLogo";
+import VoltIcon from "@/components/shared/VoltIcon";
 import { formatUGX } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import api from "@/lib/api";
@@ -53,11 +55,8 @@ export default function Header() {
           className="p-2 rounded-lg hover:bg-white/10 transition-colors">
           <Menu size={20} />
         </button>
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-            <Tv size={16} className="text-white" />
-          </div>
-          <span className="font-bold text-lg tracking-tight">Voltrix</span>
+        <Link href="/">
+          <VoltrixLogo size={34} textSize="text-xl" />
         </Link>
       </div>
 
@@ -95,11 +94,12 @@ export default function Header() {
 
       {/* Right — actions */}
       <div className="flex items-center gap-2 ml-auto">
-        {/* AI Assistant */}
+        {/* Volt AI Assistant */}
         <button onClick={() => setAiDrawerOpen(true)}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
-          title="AI Assistant">
-          <Bot size={20} />
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 transition-colors"
+          title="Volt AI">
+          <VoltIcon size={16} />
+          <span className="text-xs font-semibold text-sky-300 hidden sm:block">Volt</span>
         </button>
 
         {isAuthenticated ? (

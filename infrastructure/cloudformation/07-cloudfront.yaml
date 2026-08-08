@@ -33,31 +33,31 @@ Resources:
 
         Origins:
           - Id: processed-videos
-            DomainName: voltrix-processed-videos-prod-991514087781.s3.eu-west-1.amazonaws.com
+            DomainName: voltrix-processed-videos-prod-873938828708.s3.eu-west-1.amazonaws.com
             S3OriginConfig:
               OriginAccessIdentity: ''
             OriginAccessControlId: !GetAtt VideosOAC.Id
 
           - Id: thumbnails
-            DomainName: voltrix-thumbnails-prod-991514087781.s3.eu-west-1.amazonaws.com
+            DomainName: voltrix-thumbnails-prod-873938828708.s3.eu-west-1.amazonaws.com
             S3OriginConfig:
               OriginAccessIdentity: ''
             OriginAccessControlId: !GetAtt VideosOAC.Id
 
           - Id: sounds
-            DomainName: voltrix-sounds-prod-991514087781.s3.eu-west-1.amazonaws.com
+            DomainName: voltrix-sounds-prod-873938828708.s3.eu-west-1.amazonaws.com
             S3OriginConfig:
               OriginAccessIdentity: ''
             OriginAccessControlId: !GetAtt VideosOAC.Id
 
           - Id: frontend
-            DomainName: voltrix-frontend-prod-991514087781.s3.eu-west-1.amazonaws.com
+            DomainName: voltrix-frontend-prod-873938828708.s3.eu-west-1.amazonaws.com
             S3OriginConfig:
               OriginAccessIdentity: ''
             OriginAccessControlId: !GetAtt FrontendOAC.Id
 
           - Id: api
-            DomainName: voltrix-alb-prod-2137832617.eu-west-1.elb.amazonaws.com
+            DomainName: voltrix-alb-prod-1152339653.eu-west-1.elb.amazonaws.com
             CustomOriginConfig:
               HTTPPort: 80
               OriginProtocolPolicy: http-only

@@ -15,9 +15,9 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Voltrix RDS subnet group
       SubnetIds:
-        - subnet-0972c3a7d449c0729   # priv-db-1a
-        - subnet-09f8cc03a76cb86c4   # priv-db-1b
-        - subnet-005f3a2e40bd453d7   # priv-db-1c
+        - subnet-003d91049e4b0f7f5   # priv-db-1a
+        - subnet-070bedfba440ade37   # priv-db-1b
+        - subnet-093744e15cb480601   # priv-db-1c
 
   VoltrixDB:
     Type: AWS::RDS::DBInstance
@@ -36,7 +36,7 @@ Resources:
       MasterUserPassword: !Ref DBPassword
       DBSubnetGroupName: !Ref DBSubnetGroup
       VPCSecurityGroups:
-        - sg-034a2f43fd2f5aabd   # sg-rds-prod
+        - sg-0b6926e090298ec13   # sg-rds-prod
       MultiAZ: false
       BackupRetentionPeriod: 3
       DeletionProtection: false
@@ -49,8 +49,8 @@ Resources:
       CacheSubnetGroupName: voltrix-cache-subnet-prod
       Description: Voltrix Redis subnet group
       SubnetIds:
-        - subnet-0972c3a7d449c0729
-        - subnet-09f8cc03a76cb86c4
+        - subnet-003d91049e4b0f7f5
+        - subnet-070bedfba440ade37
 
   VoltrixRedis:
     Type: AWS::ElastiCache::CacheCluster
@@ -62,7 +62,7 @@ Resources:
       NumCacheNodes: 1
       CacheSubnetGroupName: !Ref CacheSubnetGroup
       VpcSecurityGroupIds:
-        - sg-02a4b2381eb71b870   # sg-redis-prod
+        - sg-0ee7ca35814c3ace5   # sg-redis-prod
 
 Outputs:
   DBEndpoint:
