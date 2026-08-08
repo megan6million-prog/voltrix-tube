@@ -20,7 +20,6 @@ build/
 *.pem
 *.key
 backend/.env
-backend/alembic.ini
 
 # Logs
 *.log

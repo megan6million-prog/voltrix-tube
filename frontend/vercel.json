@@ -1,0 +1,14 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://voltrix-api.up.railway.app/v1",
+    "NEXT_PUBLIC_APP_NAME": "Voltrix",
+    "NEXT_PUBLIC_CURRENCY": "UGX",
+    "NEXT_PUBLIC_COUNTRY": "UG",
+    "NEXT_PUBLIC_COGNITO_REGION": "eu-west-1",
+    "NEXT_PUBLIC_COGNITO_USER_POOL_ID": "eu-west-1_jxalwlttf",
+    "NEXT_PUBLIC_COGNITO_CLIENT_ID": "7nvnsaaqj9boib1cvnrjrb19dl"
+  }
+}
