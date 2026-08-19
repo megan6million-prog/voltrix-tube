@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/v1"
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 90  # 90 days — YouTube-level persistence
 
     # Database
     DATABASE_URL: str

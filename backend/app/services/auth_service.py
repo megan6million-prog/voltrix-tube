@@ -125,16 +125,16 @@ class AuthService:
             result = await self.db.execute(select(User).where(User.phone_primary == phone))
             user = result.scalar_one_or_none()
             if not user:
-                raise ValueError("No account found with this phone number")
+                raise ValueError("Phone number not registered. Please sign up first.")
 
-            # Check password hash stored in bio
+            # Verify password hash stored in bio field (dev only)
             pwd_hash = hashlib.sha256(password.encode()).hexdigest()
-            expected = f"__pwd:{pwd_hash}"
-            if user.bio and not user.bio.startswith("__pwd:"):
-                # bio is real bio content — allow any password in dev
-                pass
-            elif user.bio != expected:
-                raise ValueError("Incorrect password")
+            expected_bio = f"__pwd:{pwd_hash}"
+            bio = user.bio or ""
+
+            # Accept if password matches OR if bio is real content (not a password hash)
+            if bio.startswith("__pwd:") and bio != expected_bio:
+                raise ValueError("Incorrect password. Please try again.")
 
             tokens = self._generate_dev_tokens(user)
             return {
