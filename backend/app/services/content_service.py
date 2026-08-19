@@ -78,6 +78,20 @@ class ContentService:
 
         self.db.add(content)
         await self.db.commit()
+
+        # Auto-trigger Stream processing if s3_raw_key is provided
+        if data.get("s3_key"):
+            from app.services.media_pipeline import process_upload
+            try:
+                await process_upload(
+                    db=self.db,
+                    content_id=str(content.id),
+                    r2_key=data["s3_key"],
+                    title=data["title"],
+                )
+            except Exception as e:
+                logger.warning("content.auto_process.failed", error=str(e))
+
         return self._serialize(content)
 
     async def get_content_detail(self, content_id: uuid.UUID, user_id: uuid.UUID) -> dict | None:

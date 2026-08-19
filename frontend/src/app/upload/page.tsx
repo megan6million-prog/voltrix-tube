@@ -79,16 +79,35 @@ export default function UploadPage() {
         xhr.send(file);
       });
 
-      // 3. Create content record
+      // 3. Create content record (with s3_key to trigger Stream processing)
       await api.post("/content", {
         ...form,
         tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
         ppv_price_ugx: form.ppv_price_ugx ? parseInt(form.ppv_price_ugx) : undefined,
         rental_price_ugx: form.rental_price_ugx ? parseInt(form.rental_price_ugx) : undefined,
+        s3_key: s3_key, // triggers auto-processing via Cloudflare Stream
       });
 
       setStep("processing");
-      setTimeout(() => router.push("/studio"), 3000);
+
+      // Poll for processing status
+      const poll = setInterval(async () => {
+        try {
+          const statusRes = await api.get(`/media/content/${contentId}/processing-status`);
+          const status = statusRes.data.data;
+          if (status.ready) {
+            clearInterval(poll);
+            setTimeout(() => router.push("/studio"), 1500);
+          } else if (status.processing_status === "failed") {
+            clearInterval(poll);
+            setError("Processing failed. Please try uploading again.");
+            setStep("details");
+          }
+        } catch {}
+      }, 5000);
+
+      // Stop polling after 10 minutes
+      setTimeout(() => clearInterval(poll), 600000);
     } catch (err: any) {
       setError(err.message || "Upload failed");
       setStep("details");
@@ -256,11 +275,12 @@ export default function UploadPage() {
         {/* Step: Processing */}
         {step === "processing" && (
           <div className="text-center py-16">
-            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl">✅</span>
+            <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
-            <p className="text-xl font-semibold mb-2">Upload complete!</p>
-            <p className="text-gray-400 text-sm">Your video is being processed. We'll notify you when it's ready.</p>
+            <p className="text-xl font-semibold mb-2">Processing your video...</p>
+            <p className="text-gray-400 text-sm mb-2">Cloudflare Stream is transcoding to HLS</p>
+            <p className="text-gray-500 text-xs">Usually takes 1-3 minutes. You can close this tab — we'll notify you when it's ready.</p>
           </div>
         )}
       </div>
