@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Voltrix — Uganda's Video Platform",
@@ -18,7 +15,7 @@ export const viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-[#0f0f0f] text-white min-h-screen`}>
+      <body className="bg-[#0f0f0f] text-white min-h-screen" style={{fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"}}>
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -50,6 +50,11 @@ class Settings(BaseSettings):
     CLOUDFRONT_KEY_PAIR_ID: Optional[str] = None
     CLOUDFRONT_PRIVATE_KEY: Optional[str] = None
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    APP_BASE_URL: str = "https://voltrix-api-production.up.railway.app"
+
     # Cognito
     COGNITO_USER_POOL_ID: str
     COGNITO_CLIENT_ID: str

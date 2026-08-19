@@ -16,7 +16,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const token = localStorage.getItem("voltrix_access_token");
     if (!token) return;
 
-    // Load user profile and wallet on mount
+    // Restore user from localStorage immediately (no flicker)
+    const storedUser = localStorage.getItem("voltrix_user");
+    if (storedUser) {
+      try { setUser(JSON.parse(storedUser)); } catch {}
+    }
+
+    // Load fresh data from API
     Promise.all([
       api.get("/users/me"),
       api.get("/wallet/balance"),
@@ -24,6 +30,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     ])
       .then(([userRes, walletRes, notifRes]) => {
         setUser(userRes.data.data);
+        localStorage.setItem("voltrix_user", JSON.stringify(userRes.data.data));
         setWalletBalance(
           walletRes.data.data.balance_ugx,
           walletRes.data.data.bonus_balance_ugx

@@ -1,14 +1,20 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAppStore } from "@/store/app.store";
 import { Eye, EyeOff } from "lucide-react";
 import VoltrixLogo from "@/components/shared/VoltrixLogo";
 
+function saveSession(access_token: string, refresh_token: string, user: any) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("voltrix_access_token", access_token);
+    localStorage.setItem("voltrix_refresh_token", refresh_token || "");
+    localStorage.setItem("voltrix_user", JSON.stringify(user));
+  }
+}
+
 export default function LoginPage() {
-  const router = useRouter();
   const { setUser } = useAppStore();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -22,13 +28,21 @@ export default function LoginPage() {
     setError("");
     try {
       const res = await api.post("/auth/login", { phone, password });
-      const { access_token, refresh_token, user } = res.data.data;
-      localStorage.setItem("voltrix_access_token", access_token);
-      localStorage.setItem("voltrix_refresh_token", refresh_token);
-      setUser(user);
-      router.push("/");
+      const result = res.data?.data || res.data;
+
+      if (result?.access_token) {
+        saveSession(result.access_token, result.refresh_token, result.user);
+        setUser(result.user);
+        window.location.href = "/";
+        return;
+      }
+      setError("Login failed — no token returned");
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Invalid phone or password");
+      const detail = err.response?.data?.detail
+        || err.response?.data?.message
+        || err.message
+        || "Login failed. Try again.";
+      setError(detail);
     } finally {
       setLoading(false);
     }
@@ -57,7 +71,7 @@ export default function LoginPage() {
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={e => setPhone(e.target.value)}
                 placeholder="+256 7XX XXX XXX"
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white/30 placeholder-gray-600"
               />
@@ -69,7 +83,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="Your password"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:border-white/30 placeholder-gray-600"
                 />
@@ -98,7 +112,10 @@ export default function LoginPage() {
             <div className="flex-1 border-t border-white/10" />
           </div>
 
-          <button className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl py-3 text-sm transition-colors">
+          {/* Google OAuth */}
+          <button
+            onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_URL?.replace('/v1','')}/v1/auth/social/google/redirect`}
+            className="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl py-3 text-sm transition-colors">
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>

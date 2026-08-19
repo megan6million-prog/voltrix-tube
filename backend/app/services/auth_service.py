@@ -116,8 +116,8 @@ class AuthService:
         self.db.add(wallet)
         await self.db.commit()
 
-        tokens = await self._authenticate(phone=phone)
-        return {**tokens, "user": {"id": str(user.id), "username": user.username}}
+        tokens = self._generate_dev_tokens(user)
+        return {**tokens, "user": {"id": str(user.id), "username": user.username, "role": user.role}}
 
     # ── Login ─────────────────────────────────────────────────────────────────
     async def login(self, phone: str, password: str) -> dict:
@@ -157,6 +157,29 @@ class AuthService:
 
         auth = response["AuthenticationResult"]
         user = await self._get_or_create_user_from_token(auth["IdToken"])
+        if not user:
+            import base64, json
+            parts = auth["IdToken"].split(".")
+            payload_b64 = parts[1]
+            rem = len(payload_b64) % 4
+            if rem > 0:
+                payload_b64 += "=" * (4 - rem)
+            payload = json.loads(base64.b64decode(payload_b64).decode())
+            cognito_sub = payload.get("sub")
+            preferred_username = payload.get("preferred_username") or payload.get("cognito:username") or f"user_{uuid.uuid4().hex[:6]}"
+            username = await self._generate_unique_username(preferred_username)
+            
+            user = User(
+                cognito_sub=cognito_sub,
+                username=username,
+                phone_primary=phone,
+            )
+            self.db.add(user)
+            await self.db.flush()
+            wallet = UserWallet(user_id=user.id)
+            self.db.add(wallet)
+            await self.db.commit()
+
         return {
             "access_token": auth["AccessToken"],
             "refresh_token": auth["RefreshToken"],
@@ -200,18 +223,20 @@ class AuthService:
 
     # ── Refresh token ─────────────────────────────────────────────────────────
     async def refresh_token(self, refresh_token: str) -> dict:
+        # Try custom JWT refresh token verification first (works in both dev and prod)
+        from jose import jwt
+        try:
+            payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get("sub")
+            result = await self.db.execute(select(User).where(User.id == user_id))
+            user = result.scalar_one_or_none()
+            if user:
+                tokens = self._generate_dev_tokens(user)
+                return {"access_token": tokens["access_token"]}
+        except Exception:
+            pass
+
         if DEV_MODE:
-            from jose import jwt
-            try:
-                payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
-                user_id = payload.get("sub")
-                result = await self.db.execute(select(User).where(User.id == user_id))
-                user = result.scalar_one_or_none()
-                if user:
-                    tokens = self._generate_dev_tokens(user)
-                    return {"access_token": tokens["access_token"]}
-            except Exception:
-                pass
             raise ValueError("Invalid refresh token")
 
         try:
